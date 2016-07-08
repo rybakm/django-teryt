@@ -6,9 +6,13 @@ Tests for `django-teryt` modules utils.
 """
 
 from django.test import TestCase
-from unittest.mock import patch
 import requests_mock
 from bs4 import BeautifulSoup
+
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 from ..utils import get_xml_id_dictionary, HttpError, ParsingError
 
@@ -57,6 +61,7 @@ class TestUtils(TestCase):
         'http://www.wp.pl')
 
     def test_incorrect_parse_initialize_parse_tree_fail(self):
-        with patch.object(BeautifulSoup, 'find', return_value=None) as mock_method:
+        with mock.patch.object(BeautifulSoup, 'find',
+        return_value=None) as mock_method:
             self.assertRaises(ParsingError, get_xml_id_dictionary)
             self.assertTrue(mock_method.called)
