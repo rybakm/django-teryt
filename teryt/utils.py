@@ -5,6 +5,9 @@ import xml.etree.cElementTree as et
 from django.utils.encoding import smart_text
 import re
 
+def_gus_url = 'http://www.stat.gov.pl/broker/access/prefile/'\
+              'listPreFiles.jspa'
+
 
 class HttpError(Exception):
     pass
@@ -27,16 +30,14 @@ def parse(stream):
         }
 
 
-def get_xml_id_dictionary(url='http://www.stat.gov.pl/broker/access/prefile/'
-                          'listPreFiles.jspa'):
+def get_xml_id_dictionary(url=def_gus_url):
     from bs4 import BeautifulSoup
     import requests
 
     response = requests.get(url, stream=True)
     if response.status_code != 200:
-        msg = ('Cannot connect to {}, '
-        'status code: {}').format(url, response.status_code)
-        raise HttpError(msg)
+        raise HttpError('Cannot connect to {}, '
+            'status code: {}'.format(url, response.status_code))
     soup = BeautifulSoup(response.content, 'html.parser')
 
     try:
@@ -47,9 +48,9 @@ def get_xml_id_dictionary(url='http://www.stat.gov.pl/broker/access/prefile/'
         for tr in tbody.find_all(name='tr'):
             fname = tr.find(name='td')
             fname = fname.string
-            fname = fname+'.xml'
-            id = tr.find(name='a', href=re.compile('downloadPreFile'))
-            files[fname] = int((id['href']).rpartition('id=')[2])
+            fname = fname + '.xml'
+            fid = tr.find(name='a', href=re.compile('downloadPreFile'))
+            files[fname] = int(fid['href'].split('id=')[-1])
     except AttributeError:
         raise ParsingError('Cannot parse tree, '
         'possibly incorrect url or obsolete code.')
