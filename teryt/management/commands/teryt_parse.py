@@ -33,7 +33,7 @@ class Command(BaseCommand):
             raise CommandError('At least 1 file name required')
 
         for data_file in args:
-            print('Working on {}'.format(data_file))
+            self.stdout.write('Working on {}'.format(data_file))
             if zipfile.is_zipfile(data_file):
                 zfile = zipfile.ZipFile(data_file)
                 fname = zfile.namelist()[0]
@@ -42,6 +42,6 @@ class Command(BaseCommand):
             else:
                 with open(data_file) as xml_file:
                     update_database(xml_file, data_file, force_ins)
-            print('File {} uploaded'.format(data_file))
+            self.stdout.write('File {} uploaded'.format(data_file))
 
-        print("Done.")
+        self.stdout.write("Done.")

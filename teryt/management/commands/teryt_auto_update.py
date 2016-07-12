@@ -26,9 +26,9 @@ class Command(BaseCommand):
         for zfile in zip_files:
             # only file inside a proper archive is xml with teryt data
             fname = zfile.namelist()[0]
-            print('Working on {}'.format(fname))
+            self.stdout.write('Working on {}'.format(fname))
             with zfile.open(fname) as xml_file:
                 update_database(xml_file, fname, False)
-                print('File {} uploaded.'.format(fname))
+                self.stdout.write('File {} uploaded.'.format(fname))
 
-        print("Done.")
+        self.stdout.write("Done.")
