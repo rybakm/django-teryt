@@ -1,17 +1,20 @@
-import os.path
-import io
-import zipfile
 from collections import OrderedDict
+import io
+import os.path
+import zipfile
 
 from django.core.management.base import CommandError
 from django.db import transaction, DatabaseError, IntegrityError
-
 import requests
 
-from .utils import get_xml_id_dictionary, parse
 from .models import (RodzajMiejscowosci, JednostkaAdministracyjna,
                     Miejscowosc, Ulica)
+from .utils import get_xml_id_dictionary, parse
 
+# Dictionary containing teryt data files and according 
+# data models inside them. Order is crucual correct data update -
+# Miejscowosc depends on RodzajMiejscowosci and so on. If file would
+# be updated in other order, foreign keys dependencies will be broken.
 fn_dict = OrderedDict([
             ('WMRODZ.xml', RodzajMiejscowosci),
             ('TERC.xml', JednostkaAdministracyjna),
@@ -44,29 +47,29 @@ def get_zip_files():
 
 def update_database(xml_stream, fname, force_flag):
     try:
-        c = fn_dict[os.path.basename(fname)]
+        teryt_class = fn_dict[os.path.basename(fname)]
     except KeyError as e:
         raise CommandError('Unknown filename: {}'.format(e))
 
     try:
         with transaction.atomic():
-            c.objects.all().update(aktywny=False)
+            teryt_class.objects.all().update(aktywny=False)
 
             row_list = parse(xml_stream)
 
             # MySQL doesn't support deferred checking of foreign key
             # constraints. As a workaround we sort data placing rows
             # with no a parent row at the begining.
-            if c is Miejscowosc:
+            if teryt_class is Miejscowosc:
                 row_list = sorted(row_list, key=lambda x: '0000000'
                                   if x['SYM'] == x['SYMPOD']
                                   else x['SYM'])
 
             for vals in row_list:
-                t = c()
-                t.set_val(vals)
-                t.aktywny = True
-                t.save(force_insert=force_flag)
+                instance = teryt_class()
+                instance.set_val(vals)
+                instance.aktywny = True
+                instance.save(force_insert=force_flag)
 
     except IntegrityError as e:
         raise CommandError("Database integrity error: {}".format(e))

@@ -1,12 +1,22 @@
-from django.core.management.base import BaseCommand, CommandError
-import zipfile
+"""
+./manage.py teryt_parse [xml/zip files] [--update]
+------------
+
+Command will parse xml/zip and upload it into teryt database.
+Option --update must be used if files have records
+already existing in database
+"""
+
 from optparse import make_option
+import zipfile
+
+from django.core.management.base import BaseCommand, CommandError
 
 from teryt.utils_zip import update_database
 
 
 class Command(BaseCommand):
-    args = '[xml file list]'
+    args = '[xml/zip file list]'
     help = 'Import TERYT data from XML/ZIP files prepared by GUS'
     option_list = BaseCommand.option_list + (
         make_option('--update',
@@ -22,14 +32,16 @@ class Command(BaseCommand):
         if not args:
             raise CommandError('At least 1 file name required')
 
-        for file in args:
-            if zipfile.is_zipfile(file):
-                file = zipfile.ZipFile(file)
-                fname = file.namelist()[0]
-                with file.open(fname) as xml_file:
+        for data_file in args:
+            print('Working on {}'.format(data_file))
+            if zipfile.is_zipfile(data_file):
+                zfile = zipfile.ZipFile(data_file)
+                fname = zfile.namelist()[0]
+                with zfile.open(fname) as xml_file:
                     update_database(xml_file, fname, force_ins)
             else:
-                with open(file) as xml_file:
-                    update_database(xml_file, file, force_ins)
+                with open(data_file) as xml_file:
+                    update_database(xml_file, data_file, force_ins)
+            print('File {} uploaded'.format(data_file))
 
         print("Done.")
